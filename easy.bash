@@ -2,17 +2,17 @@
 
 #=============================================== PARAMETERS =================================================
 
-#EASYBASH_PARAM:EASYBASH_INSTALL_DIR:todo
-export EASYBASH_INSTALL_DIR=$(dirname "$(realpath $0)")
-
 #EASYBASH_PARAM:EASYBASH_SCRIPT_PATH:todo
-export EASYBASH_SCRIPT_PATH="$EASYBASH_INSTALL_DIR""/easy.bash"
+export EASYBASH_SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
+#EASYBASH_PARAM:EASYBASH_INSTALL_DIR:todo
+export EASYBASH_INSTALL_DIR=$(dirname "$EASYBASH_SCRIPT_PATH")
 
 #EASYBASH_PARAM:EASYBASH_EXTRA_PATH:todo
 export EASYBASH_EXTRA_PATH="$EASYBASH_INSTALL_DIR""/extra"
 
 #EASYBASH_PARAM:EASYBASH_MAX_CPU_THREADS:cpu thread limiter for heavy tasks
-export EASYBASH_MAX_CPU_THREADS="16"
+export EASYBASH_MAX_CPU_THREADS="8"
 
 #================================================= HELPER FUNCTIONS =========================================
 
@@ -28,7 +28,7 @@ function _easybash_check(){
     return $CHECK_INSTALLATION
 }
 
-function _print_header(){
+function _print_header_func(){
     local PARAM_HEADER_PREFIX="$1"
 
     local PARSEDBASHRC=$(cat "$EASYBASH_SCRIPT_PATH" | grep "$PARAM_HEADER_PREFIX")
@@ -43,17 +43,32 @@ function _print_header(){
     printf "$HELPSTRING"
 }
 
-#EASYBASH_FUNC:help_bashrc:Prints help message for easy bashrc
+function _print_header_param(){
+    local PARAM_HEADER_PREFIX="$1"
+
+    local PARSEDBASHRC=$(cat "$EASYBASH_SCRIPT_PATH" | grep "$PARAM_HEADER_PREFIX")
+    local HELPSTRING=""
+    while IFS= read -r line; do
+        local COMMANDNAME=$(echo $line | cut -d':' -f2)
+        local COMMANDDESCRIPTION=$(echo $line | cut -d':' -f3)
+        local WHITESPACEFILLER="                                                   "
+        local NEWHELPSTRING=$(printf '%.25s : %s' "$COMMANDNAME$WHITESPACEFILLER" "${!COMMANDNAME}")
+        local HELPSTRING="$HELPSTRING$NEWHELPSTRING\n"
+    done <<< "$PARSEDBASHRC"
+    printf "$HELPSTRING"
+}
+
+#EASYBASH_FUNC:easybash_help:Prints help message for easy bashrc
 function easybash_help(){
     echo "======================================================================="
     echo "============================== EASY BASH =============================="
     echo "======================================================================="
     echo -e "[*] Easy Bash Parameters:"
-    _print_header "#EASYBASH""_PARAM"
+    _print_header_param "#EASYBASH""_PARAM"
     echo -e "\n[*] Easy Bash Functions:"
-    _print_header "#EASYBASH""_FUNC"
+    _print_header_func "#EASYBASH""_FUNC"
     echo -e "\n[*] Easy Bash Aliases:"
-    _print_header "#EASYBASH""_ALIAS"
+    _print_header_func "#EASYBASH""_ALIAS"
 }
 
 #================================================= ALIASES ==================================================
@@ -74,16 +89,18 @@ function jekyll_serve(){
     docker run -p 4000:4000 -v $(pwd):/site bretfisher/jekyll-serve
 }
 
-#EASYBASH_FUNC:wipe_all_docker_data:todo
+#EASYBASH_FUNC:wipe_all_docker_data:Stops all containers and removes all docker related data (images, volumes, etc.)
 function wipe_all_docker_data(){
     _easybash_check "which docker" "Please install docker with:\n\$ sudo apt install docker.io\n\$ sudo groupadd docker\n\$ sudo usermod -aG docker ${USER}"; [ $? -eq 0 ] || return 1
     [ $? -eq 0 ] || return 1
+    docker kill $(docker ps -q)
+    docker system prune -a --volumes
 }
 
 #EASYBASH_FUNC:unrestrict_pdf:todo
 function unrestrict_pdf(){
     _easybash_check "which qpdf" "Please install qpdf with:\n\$ sudo apt install qpdf"; [ $? -eq 0 ] || return 1
-    qpdf --decrypt restricted-input.pdf unrestricted-output.pdf
+    qpdf --decrypt input.pdf output.pdf
 }
 
 #EASYBASH_FUNC:android_remote_control:Android screenshare to the PC. Enable USB debugging on android, then connect with a USB.
@@ -100,7 +117,7 @@ function no_network(){
 }
 
 #EASYBASH_FUNC:gitaddcommitpush:Adds all files in the current location, commits @1 and pushes to the origin
-gitaddcommitpush(){ 
+function gitaddcommitpush(){ 
     _easybash_check "which git" "Please install git with:\n\$ sudo apt install git"; [ $? -eq 0 ] || return 1
     git add . &&
     git commit -m "$1" &&
@@ -108,17 +125,18 @@ gitaddcommitpush(){
 }
 
 #EASYBASH_FUNC:temp_chrome:Temporary google-chrome-browser. Can be reset with temp_chrome_reset
-temp_chrome(){
+function temp_chrome(){
     _easybash_check "google-chrome" "Please Google Chrome from from https://www.google.com/chrome/"
     local EASY_CHROME="$EASYBASH_EXTRA_PATH/temp_chrome"
     local EASY_CHROME_USERDATA="$EASY_CHROME/userdata"
+    mkdir -p "$EASY_CHROME_USERDATA"
     touch "$EASY_CHROME/DELETE_userdata_TO_RESET_TEMPORARY_CHROME"
     google-chrome --user-data-dir="$EASY_CHROME_USERDATA"
 }
 
 #EASYBASH_FUNC:temp_chrome_reset:Describes instructions for resetting temp_chrome profile
-temp_chrome_reset(){
-    EASY_CHROME="$EASYBASH_EXTRA_PATH/chrome"
+function temp_chrome_reset(){
+    EASY_CHROME="$EASYBASH_EXTRA_PATH/temp_chrome"
     xdg-open "$EASY_CHROME"
 }
 
@@ -128,13 +146,16 @@ function scan_text(){
     _easybash_check "which maim" "Please install maim with:\n\$ sudo apt install maim"; [ $? -eq 0 ] || return 1
     _easybash_check "which tesseract" "Please install tesseract-ocr with:\n\$ sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel\n\$ sudo apt update\n\$ sudo apt install tesseract-ocr"; [ $? -eq 0 ] || return 1
 
-    #select tesseract_lang in eng rus equ ;do break;done # Quick language menu, add more if you need other languages.
+    echo "==================================================="
+    echo "Click to the target window or select a bounding box"
+    echo "==================================================="
+
     SCR_IMG=$(mktemp --tmpdir scan_textXXXXXXXX.png)
     OCR_TXT="${SCR_IMG%.*}"
     trap "rm $SCR_IMG" EXIT
     trap "rm $OCR_TXT.txt" EXIT
     maim -s "$SCR_IMG" -m 1
-    mogrify -modulate 100,0 -resize 400% "$SCR_IMG"  #should increase detection rate
+    mogrify -modulate 100,0 -resize 400% "$SCR_IMG"
     tesseract "$SCR_IMG" "$OCR_TXT" &> /dev/null
     cat "$OCR_TXT.txt"
     rm "$SCR_IMG"
@@ -142,10 +163,14 @@ function scan_text(){
 }
 
 
-#EASYBASH_FUNC:scan_qrcode:Select an area on the screen to run zbarimg and get text output
+#EASYBASH_FUNC:scan_qr:Select an area on the screen to run zbarimg and get text output
 function scan_qr(){
     _easybash_check "which maim" "Please install maim with:\n\$ sudo apt install maim"; [ $? -eq 0 ] || return 1
     _easybash_check "which zbarimg" "Please install zbar-tools with:\n\$ sudo apt install zbar-tools"; [ $? -eq 0 ] || return 1
+
+    echo "==================================================="
+    echo "Click to the target window or select a bounding box"
+    echo "==================================================="
 
     SCR_IMG=$(mktemp --tmpdir scan_qrXXXXXXXX.png)
     OCR_TXT="${SCR_IMG%.*}"
@@ -166,4 +191,15 @@ function enhance_image(){
     echo "=================================================================================================="
 
     docker run --rm -v "$(pwd)/`dirname ${@:$#}`":/ne/input -it alexjc/neural-enhance ${@:1:$#-1} "input/`basename ${@:$#}`"
+}
+
+#EASYBASHRC:diff_cat:Colorful alternative to "diff", using git diff
+function diff_cat(){
+    EASY_GIT_OUTPUT=$(git diff --color --no-index $@)
+    echo -e "$EASY_GIT_OUTPUT"
+}
+
+#EASYBASHRC:diff_less:Colorful alternative to "diff", using git diff
+function diff_less(){
+    git diff --no-index $@
 }
