@@ -49,19 +49,6 @@ function _easybash_check_pyenv(){
     source "$EASYBASH_PYENV/bin/activate"
 }
 
-function _easybash_check_v4l2(){
-    # v4l2loopback setup
-    cd /tmp
-    git clone https://github.com/umlaeute/v4l2loopback.git
-    cd v4l2loopback
-    git pull --ff-only
-    make && sudo make install
-    sudo depmod -a
-    # v4l2loopback init
-    sudo rmmod v4l2loopback
-    sudo modprobe v4l2loopback devices=1 video_nr=9 max_buffers=2 exclusive_caps=1 card_label="VirtualCam"
-}
-
 function _print_header_func(){
     local PARAM_HEADER_PREFIX="$1"
 
@@ -279,26 +266,57 @@ function yt_mp3(){
     "$EASYBASH_YTDLP" -x --audio-format mp3 --audio-quality 0 $@
 }
 
+#EASYBASH_FUNC:backscrub:Virtual background for webcams with deep learning. Run `backscrub_init` first!Webcam device can be passed as a parameter.
+#EASYBASH_SRC:https://github.com/salihmarangoz/backscrub
 function backscrub(){
     EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
+    EASY_BACKSCRUB_DEVICE_NUM="99" # /dev/video99
 
+    # init v4l2loopback
+    sudo rmmod v4l2loopback
+    sudo modprobe v4l2loopback devices=1 video_nr="$EASY_BACKSCRUB_DEVICE_NUM" max_buffers=2 exclusive_caps=1 card_label="VirtualCam"
 
-    v4l2-ctl --list-formats  -d /dev/video0
+    if [ -z "$1" ]
+    then
+        # no video device is given. find automatically
+        for var in $(ls /dev/video*)
+        do
+            v4l2-ctl --list-formats -d "$var" | grep "[0]" &> /dev/null
+            if [ $? -ne "0" ]; then
+                break
+            fi
+            EASYBASH_BESTWEBCAM=$(echo $var)
+        done
+    else
+          EASYBASH_BESTWEBCAM=$(echo $1)
+    fi
 
+    "$EASY_BACKSCRUB"/build/deepseg -d -d -c "$EASYBASH_BESTWEBCAM" -v /dev/video"$EASY_BACKSCRUB_DEVICE_NUM" -b "$EASY_BACKSCRUB/office.jpg" -m "$EASY_BACKSCRUB/models/best1-selfiesegmentation_mlkit-256x256-2021_01_19-v1215.f16.tflite"
 
-
-
-    _easybash_check_v4l2; [ $? -eq 0 ] || return 1
-    "$EASY_BACKSCRUB"/build/deepseg -d -d -c /dev/video0 -v /dev/video9 -b "$EASY_BACKSCRUB/office.jpg" -m "$EASY_BACKSCRUB/models/best1-selfiesegmentation_mlkit-256x256-2021_01_19-v1215.f16.tflite"
+    echo "===================================================="
+    echo "===================================================="
+    echo "===== IF IT DIDNT WORK RUN backscrub_init !!! ======"
+    echo "===================================================="
+    echo "===================================================="
 }
 
-function backscrub_fix(){
+function backscrub_init(){
     EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
-    _easybash_check_v4l2; [ $? -eq 0 ] || return 1
-    sudo apt install libopencv-dev build-essential curl
+    EASY_BACKSCRUB_DEVICE_NUM="19"
+
+    # setup v4l2loopback
+    cd /tmp
+    git clone https://github.com/umlaeute/v4l2loopback.git
+    cd v4l2loopback
+    git pull --ff-only
+    make && sudo make install
+    sudo depmod -a
+
+    # setup backscrub
     git clone --recursive https://github.com/salihmarangoz/backscrub.git "$EASY_BACKSCRUB"
     cd "$EASY_BACKSCRUB"
     git pull --ff-only
+    sudo apt install libopencv-dev build-essential curl
     ./cmake-3.20.3-linux-x86_64.sh --skip-license
     git clone https://github.com/tensorflow/tensorflow/ --depth 1 --branch v2.4.0
     mkdir build; cd build
