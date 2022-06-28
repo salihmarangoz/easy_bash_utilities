@@ -9,7 +9,8 @@ Also, check [EXTRA.md](EXTRA.md) for other useful tricks related to Bash.
 ## Install
 
 ```bash
-$ git clone git@github.com:salihmarangoz/easy_bash_utilities.git ~/.easy_bash_utilities
+$ sudo apt install git
+$ git clone https://github.com/salihmarangoz/easy_bash_utilities.git ~/.easy_bash_utilities
 ```
 
 And add the following line at the end of `~/.bashrc` file.
