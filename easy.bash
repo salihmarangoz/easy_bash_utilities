@@ -328,6 +328,28 @@ function backscrub_init(){
     make -j8
 }
 
+#EASYBASH_FUNC:tmux_init:Install tmux and initializes the config file
+function tmux_init(){
+    # Install
+    sudo apt install tmux
+
+    # Custom Configuration
+    cp "$HOME/.tmux.conf" "$HOME/.tmux.bak"
+    echo > "$HOME/.tmux.conf"
+    cat > "$HOME/.tmux.conf" << EOF
+set-option -g default-command "exec /bin/bash"
+set-option -g allow-rename off
+set -g default-terminal "screen-256color"
+set -g status off
+set -g mouse on
+EOF
+
+    echo "============================================"
+    echo "Modified $HOME/.tmux.conf"
+    echo "Old file is backed up to $HOME/.tmux.bak"
+    echo "============================================"
+}
+
 
 #============================================================================================================#
 #================================================= TODO =====================================================#
