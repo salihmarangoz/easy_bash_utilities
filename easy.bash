@@ -300,9 +300,9 @@ function backscrub(){
     echo "===================================================="
 }
 
+#EASYBASH_FUNC:backscrub:Installs/compiles backscrub and v4l2loopback.
 function backscrub_init(){
     EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
-    EASY_BACKSCRUB_DEVICE_NUM="19"
 
     # setup v4l2loopback
     cd /tmp
