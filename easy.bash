@@ -273,11 +273,15 @@ function yt_mp3(){
 #EASYBASH_SRC:https://github.com/salihmarangoz/backscrub
 function backscrub(){
     EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
-    EASY_BACKSCRUB_DEVICE_NUM="99" # /dev/video99
+
+    if [ -z "$EASY_BACKSCRUB_DEVICE_NUM" ]
+    then
+        EASY_BACKSCRUB_DEVICE_NUM="99" # /dev/video99
+    fi
 
     # init v4l2loopback
     sudo rmmod v4l2loopback
-    sudo modprobe v4l2loopback devices=1 video_nr="$EASY_BACKSCRUB_DEVICE_NUM" max_buffers=2 exclusive_caps=1 card_label="VirtualCam"
+    sudo modprobe v4l2loopback video_nr=99,98,97 max_buffers=2 exclusive_caps=1 card_label="VirtualCam"
 
     if [ -z "$1" ]
     then
