@@ -1,6 +1,8 @@
 #!/bin/bash
 
-#=============================================== PARAMETERS =================================================
+#============================================================================================================#
+#=============================================== PARAMETERS =================================================#
+#============================================================================================================#
 
 #EASYBASH_PARAM:EASYBASH_SCRIPT_PATH:todo
 export EASYBASH_SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
@@ -12,9 +14,11 @@ export EASYBASH_INSTALL_DIR=$(dirname "$EASYBASH_SCRIPT_PATH")
 export EASYBASH_EXTRA_PATH="$EASYBASH_INSTALL_DIR""/extra"
 
 #EASYBASH_PARAM:EASYBASH_MAX_CPU_THREADS:cpu thread limiter for heavy tasks
-export EASYBASH_MAX_CPU_THREADS="8"
+export EASYBASH_MAX_CPU_THREADS=8
 
-#================================================= HELPER FUNCTIONS =========================================
+#============================================================================================================#
+#================================================= HELPER FUNCTIONS =========================================#
+#============================================================================================================#
 
 function _easybash_check(){
     local PARAM_CHECK_COMMAND="$1"
@@ -26,6 +30,16 @@ function _easybash_check(){
         local CHECK_INSTALLATION=1
     fi
     return $CHECK_INSTALLATION
+}
+
+function _easybash_check_ytdlp(){
+    EASYBASH_YTDLP="$EASYBASH_EXTRA_PATH/yt-dlp"
+    _easybash_check "cat $EASYBASH_YTDLP" "Installing yt-dlp..."
+    if [ $? -ne "0" ]; then
+        wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O "$EASYBASH_YTDLP"
+        chmod a+rx "$EASYBASH_YTDLP"
+    fi
+    "$EASYBASH_YTDLP" -U
 }
 
 function _print_header_func(){
@@ -58,7 +72,7 @@ function _print_header_param(){
     printf "$HELPSTRING"
 }
 
-#EASYBASH_FUNC:easybash_help:Prints help message for easy bashrc
+#EASYBASH_FUNC:easybash_help:Prints help message for EasyBash
 function easybash_help(){
     echo "======================================================================="
     echo "============================== EASY BASH =============================="
@@ -71,7 +85,9 @@ function easybash_help(){
     _print_header_func "#EASYBASH""_ALIAS"
 }
 
-#================================================= ALIASES ==================================================
+#============================================================================================================#
+#================================================= ALIASES ==================================================#
+#============================================================================================================#
 
 #EASYBASH_ALIAS:py:Shorter version of python3
 alias py='python3' 
@@ -79,8 +95,9 @@ alias py='python3'
 #EASYBASH_ALIAS:fix-skype:Kills Skype background processes without terminating the program
 alias fix-skype='kill -HUP `ps -eo "pid:1,args:1" | grep -E "\-\-type=renderer.*skypeforlinux" | cut -d" " -f1`'
 
-
-#================================================= FUNCTIONS ================================================
+#============================================================================================================#
+#================================================= FUNCTIONS ================================================#
+#============================================================================================================#
 
 #EASYBASH_FUNC:jekyll_server:Starts jekyll docker used for rendering github.io webpages
 #EASYBASH_SRC:https://github.com/BretFisher/jekyll-serve
@@ -193,13 +210,150 @@ function enhance_image(){
     docker run --rm -v "$(pwd)/`dirname ${@:$#}`":/ne/input -it alexjc/neural-enhance ${@:1:$#-1} "input/`basename ${@:$#}`"
 }
 
-#EASYBASHRC:diff_cat:Colorful alternative to "diff", using git diff
+#EASYBASH_FUNC:diff_cat:Colorful alternative to "diff", using git diff
 function diff_cat(){
     EASY_GIT_OUTPUT=$(git diff --color --no-index $@)
     echo -e "$EASY_GIT_OUTPUT"
 }
 
-#EASYBASHRC:diff_less:Colorful alternative to "diff", using git diff
+#EASYBASH_FUNC:diff_less:Colorful alternative to "diff", using git diff
 function diff_less(){
     git diff --no-index $@
+}
+
+#EASYBASH_FUNC:gitaddcommitpush:Adds all files in the current location, commits @1 and pushes to the origin
+function gitaddcommitpush(){ 
+    _easybash_check "which git" "Please install git with:\n\$ sudo apt install git"; [ $? -eq 0 ] || return 1
+
+    git add . &&
+    git commit -m "$1" &&
+    git push origin
+}
+
+#EASYBASH_FUNC:yt_video:Downloads videos or playlists with yt-dlp.
+function yt_video(){
+    _easybash_check_ytdlp
+    "$EASYBASH_YTDLP" $@
+}
+
+#EASYBASH_FUNC:yt_mp4:Downloads videos or playlists with yt-dlp and re-encodes into mp4.
+function yt_mp4(){
+    _easybash_check_ytdlp
+    "$EASYBASH_YTDLP" --recode-video mp4 $@
+}
+
+#EASYBASH_FUNC:yt_video:Downloads videos or playlists with yt-dlp and re-encodes into mp3.
+function yt_mp3(){
+    _easybash_check_ytdlp
+    "$EASYBASH_YTDLP" -x --audio-format mp3 --audio-quality 0 $@
+}
+
+
+#============================================================================================================#
+#================================================= TODO =====================================================#
+#============================================================================================================#
+
+#EASYBASH_FUNC:compress_audio:Compress audio with MP3
+function compress_audio(){
+    _easybash_check "which ffmpeg" "Please install ffmpeg with:\n\$ sudo apt install ffmpeg"; [ $? -eq 0 ] || return 1
+
+    for var in "$@"
+    do
+        INPUT_FILE="$var"
+        OUTPUT_FILE="${INPUT_FILE%.*}.compressed.mp3"
+        if [[ "$INPUT_FILE" == *".compressed."* ]]; then
+            echo "$INPUT_FILE is already compressed! (according to the filename)"
+            continue
+        fi
+        ffmpeg -i "$INPUT_FILE" -acodec libmp3lame -threads "$BASHRC_CPU_THREADS" "$OUTPUT_FILE"
+    done
+    alert "Audio compressing job finished"
+}
+
+
+#EASYBASH_FUNC:compress_video:Compress videos with Vary the Constant Rate Factor to MP4
+function compress_video(){
+    _easybash_check "which ffmpeg" "Please install ffmpeg with:\n\$ sudo apt install ffmpeg"; [ $? -eq 0 ] || return 1
+
+    for var in "$@"
+    do
+        INPUT_FILE="$var"
+        OUTPUT_FILE="${INPUT_FILE%.*}.compressed.mp4"
+        if [[ "$INPUT_FILE" == *".compressed."* ]]; then
+            echo "$INPUT_FILE is already compressed! (according to the filename)"
+            continue
+        fi
+        ffmpeg -i "$INPUT_FILE" -vcodec libx264 -crf 23 -threads "$BASHRC_CPU_THREADS" "$OUTPUT_FILE"
+    done
+    alert "Video compressing job finished"
+}
+
+
+#EASYBASH_FUNC:archive_video:Compress videos to 720p resolution, mono audio channel, 15 fps
+function archive_video(){
+    _easybash_check "which ffmpeg" "Please install ffmpeg with:\n\$ sudo apt install ffmpeg"; [ $? -eq 0 ] || return 1
+
+    for var in "$@"
+    do
+        INPUT_FILE="$var"
+        OUTPUT_FILE="${INPUT_FILE%.*}.archived.mp4"
+        if [[ "$INPUT_FILE" == *".archived."* ]]; then
+            echo "$INPUT_FILE is already archived! (according to the filename)"
+            continue
+        fi
+        ffmpeg -i "$INPUT_FILE" -r 15 -preset veryslow -s hd720 -map_channel 0.1.0 -async 1 -threads "$BASHRC_CPU_THREADS" "$OUTPUT_FILE"
+    done
+    alert "Video archiving job finished"
+}
+
+
+#EASYBASH_FUNC:summarize_video:Summarizes the video by deleting duplicate frames
+function summarize_video(){
+    _easybash_check "which ffmpeg" "Please install ffmpeg with:\n\$ sudo apt install ffmpeg"; [ $? -eq 0 ] || return 1
+
+    for var in "$@"
+    do
+        INPUT_FILE="$var"
+        TMP_FILE=$(mktemp "XXXXXXXXXXXXXX$INPUT_FILE")
+        OUTPUT_FILE="${INPUT_FILE%.*}.summarized.mp4"
+        if [[ "$INPUT_FILE" == *".summarized."* ]]; then
+            echo "$INPUT_FILE is already summarized! (according to the filename)"
+            continue
+        fi
+        ffmpeg -y -i "$INPUT_FILE" -threads "$BASHRC_CPU_THREADS" -vf mpdecimate,setpts=N/FRAME_RATE/TB "$TMP_FILE"
+        LAST_FRAME_POS=$(ffmpeg -i "$TMP_FILE" -threads "$BASHRC_CPU_THREADS" -map 0:v:0 -c copy -f null - 2>&1 | grep frame | cut -d' ' -f3)
+        ffmpeg -i "$TMP_FILE" -threads "$BASHRC_CPU_THREADS" -vf trim=start_frame=0:end_frame=$LAST_FRAME_POS -an "$OUTPUT_FILE"
+        rm "$TMP_FILE"
+    done
+    alert "Video summarizing job finished"
+}
+
+
+#EASYBASH_FUNC:stabilize_video:Stabilizes/deshakes video by using vid.stab ffmpeg plugin
+function stabilize_video(){
+    BASHRC_EASY_FILES_FFMPEG="$EASYBASH_EXTRA_PATH/ffmpeg"
+    FFMPEG_EASY="$BASHRC_EASY_FILES_FFMPEG/ffmpeg"
+
+    _easybash_check "cat $FFMPEG_EASY" "Installing ffmpeg..."
+    if [ $? -ne "0" ]; then
+        mkdir -p "$BASHRC_EASY_FILES_FFMPEG"
+        wget "https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz" -O "$EASYBASH_EXTRA_PATH/ffmpeg.tar.xz"
+        tar xf "$EASYBASH_EXTRA_PATH/ffmpeg.tar.xz" -C  "$BASHRC_EASY_FILES_FFMPEG" --strip-components=1
+        rm "$EASYBASH_EXTRA_PATH/ffmpeg.tar.xz"
+    fi
+
+    for var in "$@"
+    do
+        INPUT_FILE="$var"
+        OUTPUT_FILE="${INPUT_FILE%.*}.stabilized.mp4"
+        if [[ "$INPUT_FILE" == *".stabilized."* ]]; then
+            echo "$INPUT_FILE is already stabilized! (according to the filename)"
+            continue
+        fi
+        TRANSFORM_FILE=$(mktemp "XXXXXXXXXXXXXXtransform.trf")
+        $FFMPEG_EASY -i "$INPUT_FILE" -threads "$EASYBASH_MAX_CPU_THREADS" -vf vidstabdetect="$TRANSFORM_FILE" -f null -
+        $FFMPEG_EASY -i "$INPUT_FILE" -threads "$EASYBASH_MAX_CPU_THREADS" -vf vidstabtransform="$TRANSFORM_FILE",unsharp=5:5:0.8:3:3:0.4 "$OUTPUT_FILE"
+        rm "$TRANSFORM_FILE"
+    done
+    alert "Video stabilizing job finished"
 }
