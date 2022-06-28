@@ -286,6 +286,8 @@ function backscrub(){
     # init v4l2loopback
     sudo rmmod v4l2loopback
     sudo modprobe v4l2loopback devices=2 max_buffers=2 exclusive_caps=1 card_label="VirtualCam1","VirtualCam2" video_nr=10,9
+    sudo chmod 777 /dev/video9
+    sudo chmod 777 /dev/video10
 
     if [ -z "$1" ]
     then
