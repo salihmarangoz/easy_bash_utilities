@@ -96,6 +96,9 @@ function easybash_help(){
 #================================================= ALIASES ==================================================#
 #============================================================================================================#
 
+#EASYBASH_ALIAS:help_easybash:Alternative version of help_easybash
+alias help_easybash="easybash_help"
+
 #EASYBASH_ALIAS:py:Shorter version of python3
 alias py='python3' 
 
@@ -266,7 +269,7 @@ function yt_mp3(){
     "$EASYBASH_YTDLP" -x --audio-format mp3 --audio-quality 0 $@
 }
 
-#EASYBASH_FUNC:backscrub:Virtual background for webcams with deep learning. Run `backscrub_init` first!Webcam device can be passed as a parameter.
+#EASYBASH_FUNC:backscrub:Virtual background for webcams. Run `backscrub_init` first! Webcam can be passed as a parameter.
 #EASYBASH_SRC:https://github.com/salihmarangoz/backscrub
 function backscrub(){
     EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
@@ -295,12 +298,13 @@ function backscrub(){
 
     echo "===================================================="
     echo "===================================================="
-    echo "===== IF IT DIDNT WORK RUN backscrub_init !!! ======"
+    echo "===== IF IT DIDNT WORK MAKE SURE YOU HAVE RUN: ====="
+    echo "===== $ backscrub_init ============================="
     echo "===================================================="
     echo "===================================================="
 }
 
-#EASYBASH_FUNC:backscrub:Installs/compiles backscrub and v4l2loopback.
+#EASYBASH_FUNC:backscrub_init:Installs and compiles backscrub and its dependencies.
 function backscrub_init(){
     EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
 
