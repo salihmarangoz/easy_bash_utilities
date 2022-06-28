@@ -114,10 +114,21 @@ function wipe_all_docker_data(){
     docker system prune -a --volumes
 }
 
-#EASYBASH_FUNC:unrestrict_pdf:todo
+#EASYBASH_FUNC:unrestrict_pdf:Enables disabled features (e.g. copying)
 function unrestrict_pdf(){
     _easybash_check "which qpdf" "Please install qpdf with:\n\$ sudo apt install qpdf"; [ $? -eq 0 ] || return 1
-    qpdf --decrypt input.pdf output.pdf
+
+    for var in "$@"
+    do
+        local INPUT_FILE="$var"
+        local OUTPUT_FILE="${INPUT_FILE%.*}.unrestricted.pdf"
+        if [[ "$INPUT_FILE" == *".unrestricted."* ]]; then
+            echo "$INPUT_FILE is already processed! (according to the filename)"
+            continue
+        fi
+        echo "Processing $INPUT_FILE..."
+        qpdf --decrypt "$INPUT_FILE" "$OUTPUT_FILE"
+    done
 }
 
 #EASYBASH_FUNC:android_remote_control:Android screenshare to the PC. Enable USB debugging on android, then connect with a USB.
