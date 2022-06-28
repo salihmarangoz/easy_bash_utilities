@@ -58,7 +58,7 @@ function _print_header_func(){
         local COMMANDNAME=$(echo $line | cut -d':' -f2)
         local COMMANDDESCRIPTION=$(echo $line | cut -d':' -f3)
         local WHITESPACEFILLER="                                                   "
-        local NEWHELPSTRING=$(printf '%.25s : %s' "$COMMANDNAME$WHITESPACEFILLER" "$COMMANDDESCRIPTION")
+        local NEWHELPSTRING=$(printf '%.30s : %s' "$COMMANDNAME$WHITESPACEFILLER" "$COMMANDDESCRIPTION")
         local HELPSTRING="$HELPSTRING$NEWHELPSTRING\n"
     done <<< "$PARSEDBASHRC"
     printf "$HELPSTRING"
@@ -73,7 +73,7 @@ function _print_header_param(){
         local COMMANDNAME=$(echo $line | cut -d':' -f2)
         local COMMANDDESCRIPTION=$(echo $line | cut -d':' -f3)
         local WHITESPACEFILLER="                                                   "
-        local NEWHELPSTRING=$(printf '%.25s : %s' "$COMMANDNAME$WHITESPACEFILLER" "${!COMMANDNAME}")
+        local NEWHELPSTRING=$(printf '%.30s : %s' "$COMMANDNAME$WHITESPACEFILLER" "${!COMMANDNAME}")
         local HELPSTRING="$HELPSTRING$NEWHELPSTRING\n"
     done <<< "$PARSEDBASHRC"
     printf "$HELPSTRING"
@@ -96,7 +96,7 @@ function easybash_help(){
 #================================================= ALIASES ==================================================#
 #============================================================================================================#
 
-#EASYBASH_ALIAS:help_easybash:Alternative version of help_easybash
+#EASYBASH_ALIAS:help_easybash:Alternative version of easybash_help
 alias help_easybash="easybash_help"
 
 #EASYBASH_ALIAS:py:Shorter version of python3
@@ -328,28 +328,6 @@ function backscrub_init(){
     make -j8
 }
 
-#EASYBASH_FUNC:tmux_init:Install tmux and initializes the config file
-function tmux_init(){
-    # Install
-    sudo apt install tmux
-
-    # Custom Configuration
-    cp "$HOME/.tmux.conf" "$HOME/.tmux.bak"
-    echo > "$HOME/.tmux.conf"
-    cat > "$HOME/.tmux.conf" << EOF
-set-option -g default-command "exec /bin/bash"
-set-option -g allow-rename off
-set -g default-terminal "screen-256color"
-set -g status off
-set -g mouse on
-EOF
-
-    echo "============================================"
-    echo "Modified $HOME/.tmux.conf"
-    echo "Old file is backed up to $HOME/.tmux.bak"
-    echo "============================================"
-}
-
 
 #============================================================================================================#
 #================================================= TODO =====================================================#
@@ -459,5 +437,58 @@ function stabilize_video(){
     done
     alert "Video stabilizing job finished"
 }
+
+
+#============================================================================================================#
+#================================================= INSTALLER ================================================#
+#============================================================================================================#
+
+#EASYBASH_FUNC:easybash_install_basic_utils:Installs basic utilities
+function easybash_install_basic_utils(){
+    sudo apt install \
+        aptitude apt-transport-https software-properties-common ubuntu-restricted-extras \
+        wget git rar unzip curl \
+        screen net-tools \
+        gparted htop iotop bmon \
+        thunderbird xul-ext-lightning libreoffice \
+        pinta gimp vlc \
+        octave
+}
+
+#EASYBASH_FUNC:easybash_install_tmux:Installs tmux and initializes the config file
+function easybash_install_tmux(){
+    # Install
+    sudo apt install tmux
+
+    # Custom Configuration
+    cp "$HOME/.tmux.conf" "$HOME/.tmux.bak"
+    echo > "$HOME/.tmux.conf"
+    cat > "$HOME/.tmux.conf" << EOF
+set-option -g default-command "exec /bin/bash"
+set-option -g allow-rename off
+set -g default-terminal "screen-256color"
+set -g status off
+set -g mouse on
+EOF
+}
+
+#EASYBASH_FUNC:easybash_install_sublimetext:Installs Sublime Text and initializes the config file
+function easybash_install_sublimetext(){
+    wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+    echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+    sudo apt update
+    sudo apt install sublime-text
+
+    # Custom Configuration
+    mkdir -p "$HOME/.config/sublime-text-3/Packages/User"
+    cp "$HOME/.config/sublime-text-3/Packages/User/Preferences.sublime-settings" "$HOME/.config/sublime-text-3/Packages/User/Preferences.sublime-settings.bak"
+    cat >$HOME/.config/sublime-text-3/Packages/User/Preferences.sublime-settings << EOF
+{
+    "draw_white_space": "all",
+    "translate_tabs_to_spaces": true,
+}
+EOF
+}
+
 
 
