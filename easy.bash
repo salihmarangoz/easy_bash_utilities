@@ -42,6 +42,26 @@ function _easybash_check_ytdlp(){
     "$EASYBASH_YTDLP" -U
 }
 
+function _easybash_check_pyenv(){
+    EASYBASH_PYENV="$EASYBASH_EXTRA_PATH/easyenv"
+    python3 -m venv "$EASYBASH_PYENV"
+    echo "$EASYBASH_PYENV/bin/activate"
+    source "$EASYBASH_PYENV/bin/activate"
+}
+
+function _easybash_check_v4l2(){
+    # v4l2loopback setup
+    cd /tmp
+    git clone https://github.com/umlaeute/v4l2loopback.git
+    cd v4l2loopback
+    git pull --ff-only
+    make && sudo make install
+    sudo depmod -a
+    # v4l2loopback init
+    sudo rmmod v4l2loopback
+    sudo modprobe v4l2loopback devices=1 video_nr=9 max_buffers=2 exclusive_caps=1 card_label="VirtualCam"
+}
+
 function _print_header_func(){
     local PARAM_HEADER_PREFIX="$1"
 
@@ -253,10 +273,37 @@ function yt_mp4(){
     "$EASYBASH_YTDLP" --recode-video mp4 $@
 }
 
-#EASYBASH_FUNC:yt_video:Downloads videos or playlists with yt-dlp and re-encodes into mp3.
+#EASYBASH_FUNC:yt_video:Downloads videos or fplaylists with yt-dlp and re-encodes into mp3.
 function yt_mp3(){
     _easybash_check_ytdlp
     "$EASYBASH_YTDLP" -x --audio-format mp3 --audio-quality 0 $@
+}
+
+function backscrub(){
+    EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
+
+
+    v4l2-ctl --list-formats  -d /dev/video0
+
+
+
+
+    _easybash_check_v4l2; [ $? -eq 0 ] || return 1
+    "$EASY_BACKSCRUB"/build/deepseg -d -d -c /dev/video0 -v /dev/video9 -b "$EASY_BACKSCRUB/office.jpg" -m "$EASY_BACKSCRUB/models/best1-selfiesegmentation_mlkit-256x256-2021_01_19-v1215.f16.tflite"
+}
+
+function backscrub_fix(){
+    EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
+    _easybash_check_v4l2; [ $? -eq 0 ] || return 1
+    sudo apt install libopencv-dev build-essential curl
+    git clone --recursive https://github.com/salihmarangoz/backscrub.git "$EASY_BACKSCRUB"
+    cd "$EASY_BACKSCRUB"
+    git pull --ff-only
+    ./cmake-3.20.3-linux-x86_64.sh --skip-license
+    git clone https://github.com/tensorflow/tensorflow/ --depth 1 --branch v2.4.0
+    mkdir build; cd build
+    "$EASY_BACKSCRUB"/bin/cmake ..
+    make -j8
 }
 
 
@@ -368,3 +415,5 @@ function stabilize_video(){
     done
     alert "Video stabilizing job finished"
 }
+
+
