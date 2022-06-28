@@ -233,7 +233,7 @@ function enhance_image(){
 
 #EASYBASH_FUNC:diff_cat:Colorful alternative to "diff", using git diff
 function diff_cat(){
-    EASY_GIT_OUTPUT=$(git diff --color --no-index $@)
+    local EASY_GIT_OUTPUT=$(git diff --color --no-index $@)
     echo -e "$EASY_GIT_OUTPUT"
 }
 
@@ -272,16 +272,20 @@ function yt_mp3(){
 #EASYBASH_FUNC:backscrub:Virtual background for webcams. Run `backscrub_init` first! Webcam can be passed as a parameter.
 #EASYBASH_SRC:https://github.com/salihmarangoz/backscrub
 function backscrub(){
-    EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
+    EASYBASH_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub2"
 
-    if [ -z "$EASY_BACKSCRUB_DEVICE_NUM" ]
+    # For different configurations (e.g. multiseat) set these variables (dont forget to modify):
+    # EASYBASH_BACKSCRUB_WEBCAM=/dev/video0
+    # EASYBASH_BACKSCRUB_V4L2_NUM=10
+
+    if [ -z "$EASYBASH_BACKSCRUB_V4L2_NUM" ]
     then
-        EASY_BACKSCRUB_DEVICE_NUM="99" # /dev/video99
+        EASYBASH_BACKSCRUB_V4L2_NUM="10"
     fi
 
     # init v4l2loopback
     sudo rmmod v4l2loopback
-    sudo modprobe v4l2loopback video_nr=99,98,97 max_buffers=2 exclusive_caps=1 card_label="VirtualCam"
+    sudo modprobe v4l2loopback devices=2 max_buffers=2 exclusive_caps=1 card_label="VirtualCam1","VirtualCam2" video_nr=10,9
 
     if [ -z "$1" ]
     then
@@ -292,13 +296,13 @@ function backscrub(){
             if [ $? -ne "0" ]; then
                 break
             fi
-            EASYBASH_BESTWEBCAM=$(echo $var)
+            EASYBASH_BACKSCRUB_WEBCAM=$(echo $var)
         done
     else
-          EASYBASH_BESTWEBCAM=$(echo $1)
+        EASYBASH_BACKSCRUB_WEBCAM=$(echo $1)
     fi
 
-    "$EASY_BACKSCRUB"/build/deepseg -d -d -c "$EASYBASH_BESTWEBCAM" -v /dev/video"$EASY_BACKSCRUB_DEVICE_NUM" -b "$EASY_BACKSCRUB/office.jpg" -m "$EASY_BACKSCRUB/models/best1-selfiesegmentation_mlkit-256x256-2021_01_19-v1215.f16.tflite"
+    "$EASYBASH_BACKSCRUB"/build/backscrub -d -d -c "$EASYBASH_BACKSCRUB_WEBCAM" -v /dev/video"$EASYBASH_BACKSCRUB_V4L2_NUM" -b "$EASYBASH_BACKSCRUB/backgrounds/office.jpg"
 
     echo "===================================================="
     echo "===================================================="
@@ -310,26 +314,24 @@ function backscrub(){
 
 #EASYBASH_FUNC:backscrub_init:Installs and compiles backscrub and its dependencies.
 function backscrub_init(){
-    EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub"
+    EASY_BACKSCRUB="$EASYBASH_EXTRA_PATH/backscrub2"
 
     # setup v4l2loopback
     cd /tmp
     git clone https://github.com/umlaeute/v4l2loopback.git
     cd v4l2loopback
-    git pull --ff-only
+    chmod 777 -R /tmp/v4l2loopback
     make && sudo make install
     sudo depmod -a
 
     # setup backscrub
-    git clone --recursive https://github.com/salihmarangoz/backscrub.git "$EASY_BACKSCRUB"
+    git clone --recursive --depth=1 https://github.com/salihmarangoz/backscrub.git "$EASY_BACKSCRUB"
     cd "$EASY_BACKSCRUB"
     git pull --ff-only
     sudo apt install libopencv-dev build-essential curl
-    ./cmake-3.20.3-linux-x86_64.sh --skip-license
-    git clone https://github.com/tensorflow/tensorflow/ --depth 1 --branch v2.4.0
     mkdir build; cd build
-    "$EASY_BACKSCRUB"/bin/cmake ..
-    make -j8
+    cmake ..
+    make -j"$EASYBASH_MAX_CPU_THREADS"
 }
 
 
