@@ -9,7 +9,7 @@ Also, check [EXTRA.md](EXTRA.md) for other useful tricks related to Bash.
 ## Install
 
 ```bash
-$ sudo apt install git
+$ sudo apt install git cmake build-essential
 $ git clone https://github.com/salihmarangoz/easy_bash_utilities.git ~/.easy_bash_utilities
 ```
 
