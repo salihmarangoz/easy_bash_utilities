@@ -324,6 +324,11 @@ function backscrub_init(){
     make && sudo make install
     sudo depmod -a
 
+    _easybash_check "which v4l2-ctl" "Installing v4l-utils..."
+    if [ $? -ne "0" ]; then
+        sudo apt install v4l-utils
+    fi
+
     # setup backscrub
     git clone --recursive --depth=1 https://github.com/salihmarangoz/backscrub.git "$EASY_BACKSCRUB"
     cd "$EASY_BACKSCRUB"
