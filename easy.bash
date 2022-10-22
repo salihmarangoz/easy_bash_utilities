@@ -254,19 +254,19 @@ function gitaddcommitpush(){
 #EASYBASH_FUNC:yt_video:Downloads videos or playlists with yt-dlp.
 function yt_video(){
     _easybash_check_ytdlp
-    "$EASYBASH_YTDLP" $@
+    "$EASYBASH_YTDLP" --restrict-filenames $@
 }
 
 #EASYBASH_FUNC:yt_mp4:Downloads videos or playlists with yt-dlp and re-encodes into mp4.
 function yt_mp4(){
     _easybash_check_ytdlp
-    "$EASYBASH_YTDLP" --recode-video mp4 $@
+    "$EASYBASH_YTDLP" --restrict-filenames --recode-video mp4 $@
 }
 
 #EASYBASH_FUNC:yt_video:Downloads videos or fplaylists with yt-dlp and re-encodes into mp3.
 function yt_mp3(){
     _easybash_check_ytdlp
-    "$EASYBASH_YTDLP" -x --audio-format mp3 --audio-quality 0 $@
+    "$EASYBASH_YTDLP" --restrict-filenames -x --audio-format mp3 --audio-quality 0 $@
 }
 
 #EASYBASH_FUNC:backscrub:Virtual background for webcams. Run `backscrub_init` first! Webcam can be passed as a parameter.
