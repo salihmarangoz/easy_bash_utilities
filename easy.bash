@@ -218,6 +218,23 @@ function scan_qr(){
     rm "$SCR_IMG"
 }
 
+#EASYBASH_FUNC:scan_tex:Select an area on the screen to run pix2tex and get LaTeX output
+function scan_tex(){
+    _easybash_check "which maim" "Please install maim with:\n\$ sudo apt install maim"; [ $? -eq 0 ] || return 1
+    _easybash_check "which pix2tex" "Please install pix2tex with:\n\$ pip install pix2tex"; [ $? -eq 0 ] || return 1
+
+    echo "==================================================="
+    echo "Click to the target window or select a bounding box"
+    echo "==================================================="
+
+    SCR_IMG=$(mktemp --tmpdir scan_qrXXXXXXXX.png)
+    OCR_TXT="${SCR_IMG%.*}"
+    trap "rm $SCR_IMG" EXIT
+    maim -s "$SCR_IMG" -m 1
+    pix2tex "$SCR_IMG" --katex
+    rm "$SCR_IMG"
+}
+
 
 #EASYBASH_FUNC:enhance_image:Neural image enhancer with 2x resolution increase
 #EASYBASH_SRC:https://github.com/alexjc/neural-enhance
