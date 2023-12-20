@@ -113,7 +113,7 @@ alias fix-skype='kill -HUP `ps -eo "pid:1,args:1" | grep -E "\-\-type=renderer.*
 #EASYBASH_SRC:https://github.com/BretFisher/jekyll-serve
 function jekyll_serve(){
     _easybash_check "which docker" "Please install docker with:\n\$ sudo apt install docker.io\n\$ sudo groupadd docker\n\$ sudo usermod -aG docker ${USER}"; [ $? -eq 0 ] || return 1
-    docker run --rm -p 4000:4000 -v $(pwd):/site bretfisher/jekyll-serve
+    docker run --rm -p 4000:4000 -v $(pwd):/site bretfisher/jekyll-serve:alpine
 }
 
 #EASYBASH_FUNC:wipe_all_docker_data:Stops all containers and removes all docker related data (images, volumes, etc.)
